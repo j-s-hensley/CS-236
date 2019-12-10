@@ -73,7 +73,6 @@ class OneHotClassEmbedding(Embedder):
         :param list text_batch: list of strings, sentences to embed
         :return: torch.tensor embeddings: embeddings of shape (batch_size,embed_size=768)
         '''
-        print((self.weights[class_labels]).size())
         return self.weights[class_labels]
 
 class CustomEmbedding(Embedder):

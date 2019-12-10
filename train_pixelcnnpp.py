@@ -1,6 +1,6 @@
 import argparse
 import os
-from data import CIFAR10Dataset
+from data import CIFAR10Dataset, Imagenet32Dataset
 from models.embedders import BERTEncoder, OneHotClassEmbedding, UnconditionalClassEmbedding, CustomEmbedding
 import torch
 from models.pixelcnnpp import ConditionalPixelCNNpp
@@ -10,6 +10,7 @@ import time
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 import numpy as np
+import matplotlib.pyplot as plt
 
 os.makedirs("images", exist_ok=True)
 
@@ -33,11 +34,13 @@ parser.add_argument("--model_checkpoint", type=str, default=None,
 parser.add_argument("--print_every", type=int, default=10)
 parser.add_argument("--dataset", type=str, default="cifar10", choices=["imagenet32", "cifar10"])
 parser.add_argument("--conditioning", type=str, default="unconditional", choices=["unconditional", "one-hot", "bert", "custom"])
+parser.add_argument("--max_size", type=int, default=50000)
 
 
 def train(model, embedder, optimizer, scheduler,
           train_loader, val_loader, opt):
     print("TRAINING STARTS")
+    bpd_list = []
     for epoch in range(opt.n_epochs):
         model = model.train()
         loss_to_log = 0.0
@@ -72,11 +75,13 @@ def train(model, embedder, optimizer, scheduler,
                              batches_done=batches_done,
                              dataloader=val_loader, device=device)
         val_bpd = eval(model, embedder, val_loader)
+        bpd_list += [val_bpd]
         writer.add_scalar("val/bpd", val_bpd, (epoch + 1) * len(train_loader))
 
-        torch.save(model.state_dict(),
-                   os.path.join(opt.output_dir, 'models', 'epoch_{}.pt'.format(epoch)))
+        #torch.save(model.state_dict(),
+                  # os.path.join(opt.output_dir, 'models', 'epoch_{}.pt'.format(epoch)))
 
+    plot_progress(bpd_list,opt)
     scheduler.step()
 
 
@@ -98,6 +103,15 @@ def eval(model, embedder, test_loader):
     return bpd
 
 
+def plot_progress(bpd_list, opt):
+    plt.plot(range(1,1+opt.n_epochs), bpd_list, 'r')
+    plt.title("Validation Set bpd for Training Size "+str(opt.max_size))
+    plt.xlabel("number of epochs")
+    plt.ylabel("bits per dimension (bpd)")
+    plt.savefig('outputs/pixelcnn/bpd_'+str(opt.max_size)+'.png')
+
+
+
 if __name__ == "__main__":
     opt = parser.parse_args()
     print(opt)
@@ -108,7 +122,7 @@ if __name__ == "__main__":
         val_dataset = Imagenet32Dataset(train=0, max_size=1 if opt.debug else -1)
     else:
         assert opt.dataset == "cifar10"
-        train_dataset = CIFAR10Dataset(train=not opt.train_on_val, max_size=1 if opt.debug else -1)
+        train_dataset = CIFAR10Dataset(train=not opt.train_on_val, max_size=1 if opt.debug else opt.max_size)
         val_dataset = CIFAR10Dataset(train=0, max_size=1 if opt.debug else -1)
 
     print("creating dataloaders")
@@ -173,3 +187,4 @@ if __name__ == "__main__":
         load_model(opt.model_checkpoint, generative_model)
         print("Model loaded.")
         eval(model=generative_model, embedder=encoder, test_loader=val_dataloader)
+        sample_imgs()

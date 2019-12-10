@@ -33,7 +33,7 @@ class ConditionalPixelCNNpp(ConditionedGenerativeModel):
         loss = self.loss_function(imgs, model_output, nmix=self.n_logistic_mix) / (
                     h * w * bsize * c)  # .view(bsize, -1).mean(dim=1)
         outputs = {"loss": loss, "log_likelihood": None,
-                   "log_probs": model_output}  
+                   "log_probs": model_output}
         return outputs
 
     def likelihood(self, imgs, captions_embd):
@@ -310,7 +310,7 @@ class down_right_shifted_deconv2d(nn.Module):
 
 
 '''
-skip connection parameter : 0 = no skip connection 
+skip connection parameter : 0 = no skip connection
                             1 = skip connection where skip input size === input size
                             2 = skip connection where skip input size === 2 * input size
 '''

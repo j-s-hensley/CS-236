@@ -98,16 +98,13 @@ if __name__ == "__main__":
     d = CIFAR10Dataset()
     for i in range(2):
         i = np.random.randint(0, len(d))
-        i = 7
         img, class_label, text = d[i]
         img = np.transpose(img.reshape((3, 32, 32)), [1, 2, 0])
         plt.figure(figsize=(1.5, 1.5))
         plt.imshow(img)
         plt.title(text)
-        plt.axis('off')
         plt.show()
 
-    """
     print("Testing Imagenet32 dataloader")
     d = Imagenet32Dataset()
     for i in range(2):
@@ -118,4 +115,3 @@ if __name__ == "__main__":
         plt.imshow(img)
         plt.title(text)
         plt.show()
-    """
